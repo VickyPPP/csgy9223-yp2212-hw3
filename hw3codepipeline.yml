@@ -50,10 +50,10 @@ Resources:
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
-                Owner: "djd28176"
-                Repo: hw3-codepipeline
+                Owner: "VickyPPP"
+                Repo: csgy9223-yp2212-hw3
                 Branch: main
-                OAuthToken: "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"
+                OAuthToken: "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"
               RunOrder: 1
         - Name: BackendStagingBuildStage
           Actions:
