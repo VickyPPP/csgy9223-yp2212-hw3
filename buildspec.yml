@@ -13,11 +13,11 @@ phases:
     commands:
       - echo "Zipping deployment package..."
       - cd lib
-      - zip -r9 ../deployment_package_lf_spam-email-codepp.zip .
+      - zip -r9 ../deployment_package_lf_hw3_lambda.zip .
       # - zip -r9 ../deployment_package_lf_index.zip .
       - cd ..
       - mv spam-email.py lambda_function.py
-      - zip -g deployment_package_lf_spam-email-codepp.zip lambda_function.py
+      - zip -g deployment_package_lf_hw3_lambda.zip lambda_function.py
       # - mv lambda_function.py search_photos.py
       # - mv index_photos.py lambda_function.py
       # - zip -g deployment_package_lf_index.zip lambda_function.py
@@ -25,6 +25,6 @@ phases:
   post_build:
     commands:
       - echo "Updating lambda Function..."
-      - aws lambda update-function-code --function-name spam-email-codepp --zip-file fileb://deployment_package_lf_spam-email-codepp.zip
+      - aws lambda update-function-code --function-name hw3_lambda --zip-file fileb://deployment_package_lf_hw3_lambda.zip
       # - aws lambda update-function-code --function-name index-photos-cf --zip-file fileb://deployment_package_lf_index.zip
       - echo "DONE!!"
