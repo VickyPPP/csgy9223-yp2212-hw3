@@ -26,14 +26,14 @@ Parameters:
   S3BucketName:
     Description: Type of this BacketName.
     Type: String
-    Default: hw3-lambda-resource-bucket 改
+    Default: csgy9223-hw3-lambda-resource-bucket
 
 Resources:
   #create two s3 buckets
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: store-email-bucket 改
+      BucketName: hw3-store-email-bucket
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -41,7 +41,7 @@ Resources:
   BucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: store-email-bucket 改
+      Bucket: hw3-store-email-bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -54,16 +54,17 @@ Resources:
             Resource: !Join
               - ''
               - - 'arn:aws:s3:::'
-                - store-email-bucket
+                - hw3-store-email-bucket
                 - /*
             Condition:
               StringEquals:
-                'AWS:SourceArn': arn:aws:ses:us-east-1:356677545444:receipt-rule-set/hw3SESRuleSet:receipt-rule/recipientRule
-                'AWS:SourceAccount': 356677545444 改
+                # 'AWS:SourceArn': arn:aws:ses:us-east-1:356677545444:receipt-rule-set/hx2163ruleset:receipt-rule/emailrule
+                'AWS:SourceArn': arn:aws:ses:us-east-1:599394843728:receipt-rule-set/hw3SESRuleSetyp2212:receipt-rule/recipientRuleyp2212
+                'AWS:SourceAccount': 599394843728
   S3Bucket2:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: store-trainingdata-bucket 改
+      BucketName: hw3-store-trainingdata-bucket
       PublicAccessBlockConfiguration:
         BlockPublicAcls: false
         BlockPublicPolicy: false
@@ -71,7 +72,7 @@ Resources:
   BucketPolicy2:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: store-trainingdata-bucket 改
+      Bucket: hw3-store-trainingdata-bucket
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -83,36 +84,46 @@ Resources:
             Resource: !Join
               - ''
               - - 'arn:aws:s3:::'
-                - store-trainingdata-bucket 改
+                - hw3-store-trainingdata-bucket
                 - /*
 #create lambda function                
   CFNLambda:
     Type: 'AWS::Lambda::Function'
     Properties:
-      FunctionName: hw3_lambda 改
-      Handler: hw3_lambda.lambda_handler 改
+      FunctionName: spam-email
+      Handler: spam-email.lambda_handler
       Role:
         'Fn::GetAtt':
           - CFNLambdaRoles
           - Arn
       Code:
-        S3Bucket: hw3-lambda-resource-bucket 改
-        S3Key: Archive.zip 改
+        S3Bucket: csgy9223-hw3-lambda-resource-bucket
+        S3Key: Archive.zip
       Runtime: python3.7
       Layers:
         - arn:aws:lambda:us-east-1:336392948345:layer:AWSSDKPandas-Python37:1
       Timeout: 300
+  # LambdaInvokePermission:
+  #   Type: 'AWS::Lambda::Permission'
+  #   Properties:
+  #     Action: 'lambda:InvokeFunction'
+  #     Principal: s3.amazonaws.com
+  #     FunctionName: !GetAtt
+  #       - CFNLambda
+  #       - Arn
+  #     SourceArn: !GetAtt
+  #       - SMSModelCWEvent
+  #       - Arn
   LambdaInvokePermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
+      FunctionName: !GetAtt 
+          - CFNLambda
+          - Arn
       Action: 'lambda:InvokeFunction'
       Principal: s3.amazonaws.com
-      FunctionName: !GetAtt
-        - CFNLambda
-        - Arn
-      SourceArn: !GetAtt
-        - SMSModelCWEvent
-        - Arn
+      SourceAccount: !Ref 'AWS::AccountId'
+      SourceArn: !Sub 'arn:aws:s3:::${S3Bucket}'
   #ses permission      
   SESPermission:
     Type: AWS::Lambda::Permission
@@ -121,32 +132,32 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: ses.amazonaws.com
       SourceAccount: !Ref 'AWS::AccountId'
-      SourceArn: arn:aws:ses:us-east-1:356677545444:receipt-rule-set/hw3SESRuleSet:receipt-rule/recipientRule 改
+      SourceArn: arn:aws:ses:us-east-1:599394843728:receipt-rule-set/hw3SESRuleSetyp2212:receipt-rule/recipientRuleyp2212
 
-  SMSModelCWEvent:
-    Type: 'AWS::Events::Rule'
-    Properties:
-      Description: >-
-        Amazon CloudWatch Events rule to automatically start your pipeline when
-        a change occurs in the AWS CodeCommit source repository and branch.
-      EventPattern: !Sub 
-        - >-
-          {"source":["aws.s3"],"detail-type":["AWS API Call via
-          CloudTrail"],"detail":{"eventSource":["s3.amazonaws.com"],"eventName":["PutObject",
-          "CopyObject"
-          ],"requestParameters":{"bucketName":["${SourceS3Bucket}"]}}}
-        - SourceS3Bucket: store-email-bucket 改
-      Targets:
-        - Arn: !GetAtt 
-            - CFNLambda
-            - Arn
-          Id: S3Bucket
-      State: ENABLED
+  # SMSModelCWEvent:
+  #   Type: 'AWS::Events::Rule'
+  #   Properties:
+  #     Description: >-
+  #       Amazon CloudWatch Events rule to automatically start your pipeline when
+  #       a change occurs in the AWS CodeCommit source repository and branch.
+  #     EventPattern: !Sub 
+  #       - >-
+  #         {"source":["aws.s3"],"detail-type":["AWS API Call via
+  #         CloudTrail"],"detail":{"eventSource":["s3.amazonaws.com"],"eventName":["PutObject",
+  #         "CopyObject"
+  #         ],"requestParameters":{"bucketName":["${SourceS3Bucket}"]}}}
+  #       - SourceS3Bucket: hw3-store-email-bucket
+  #     Targets:
+  #       - Arn: !GetAtt 
+  #           - CFNLambda
+  #           - Arn
+  #         Id: S3Bucket
+  #     State: ENABLED
 
   CFNLambdaRoles:
     Type: 'AWS::IAM::Role'
     Properties:
-      RoleName: hw3_lambda_role 改
+      RoleName: spam_email_role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -185,22 +196,19 @@ Resources:
               - Effect: Allow
                 Action: 
                   - 's3:ListBucket'
-                  - 'sagemaker:InvokerEndpoint'
+                  - 'sagemaker:InvokeEndpoint'
                   - 's3:PutObject'
                   - 's3:GetObject'
                   - 's3:DeleteObject'
-                Resource: !Join
-                  - ''
-                  - - 'arn:aws:s3:::'
-                    - store-trainingdata-bucket
-                    - /*
+                Resource: 
+                  - '*''
         - PolicyName: AmazonSageMaker-ExecutionPolicy-CF2
           PolicyDocument:
             Version: "2012-10-17"
             Statement: 
               - Effect: Allow
                 Action: 
-                  - 'sagemaker:InvokerEndpoint'
+                  - 'sagemaker:InvokeEndpoint'
                 Resource:
                   - '*'
         - PolicyName: AmazonSESFullAccess
@@ -254,10 +262,10 @@ Resources:
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
-                Owner: "djd28176" 改
-                Repo: hw3-codepipeline 改
+                Owner: "VickyPPP"
+                Repo: csgy9223-yp2212-hw3
                 Branch: main
-                OAuthToken: "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" 改
+                OAuthToken: "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"
               RunOrder: 1
         - Name: BackendStagingBuildStage
           Actions:
@@ -468,21 +476,21 @@ Resources:
   ReceiptRuleSet:
     Type: 'AWS::SES::ReceiptRuleSet'
     Properties:
-      RuleSetName: hw3SESRuleSet 改
+      RuleSetName: hw3SESRuleSetyp2212
   SESRule:
     Type: 'AWS::SES::ReceiptRule'
     Properties:
-      RuleSetName: hw3SESRuleSet 改
+      RuleSetName: hw3SESRuleSetyp2212
       Rule:
         # Recipients:
         #   - hw3.hx2613.info
-        Name: recipientRule 改
+        Name: recipientRuleyp2212
         Enabled: true
         ScanEnabled: true
         # TlsPolicy: !Ref TlsPolicy
         Actions:
         - S3Action:
-            BucketName: store-email-bucket 改
+            BucketName: hw3-store-email-bucket
         - LambdaAction:
             FunctionArn : !GetAtt CFNLambda.Arn
             InvocationType: Event
